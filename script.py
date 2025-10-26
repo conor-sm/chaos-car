@@ -42,8 +42,8 @@ class EventA:
     def __init__(self):
         self.image = EVENT_A_IMAGE
         self.event_length = 10000
-        #self.eventA_event = pygame.USEREVENT +1
-        #pygame.time.set_timer(self.eventA_event, 10000)
+        self.eventA_event = pygame.USEREVENT +1
+        pygame.time.set_timer(self.eventA_event, self.event_length)
         self.image_x = 0
         self.image_y = 0
 
@@ -55,10 +55,33 @@ class EventA:
 
 class EventB:
     def __init__(self):
-        pass
+        self.image == EVENT_B_IMAGE
+        self.event_length = 3000
+        self.eventB_event = pygame.USER_EVENT +1
+        pygame.time.set_timer(self.eventA_event, self.event_length)
+        self.image_x = 0
+        self.image_y = 0
+
+    def update(self):
+        self.image_y += 5
+
+    def draw(self):
+        game_class.screen.blit(self.image, (self.image_x, self.image_y))
+
 class EventC:
     def __init__(self):
-        pass
+        self.image == EVENT_C_IMAGE
+        self.event_length = 3000
+        self.eventC_event = pygame.USER_EVENT +1
+        pygame.time.set_timer(self.eventC_event, self.event_length)
+        self.image_x = 0
+        self.image_y = 0
+
+    def update(self):
+        self.image_y += 5
+
+    def draw(self):
+        game_class.screen.blit(self.image, (self.image_x, self.image_y))
 
 game_class = GameClass()
 player_class = PlayerClass()
