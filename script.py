@@ -7,16 +7,19 @@ pygame.init()
 running = True
 game_active = False
 
-WIDTH, HEIGHT = 500, 700
-screen = pygame.display.set_mode((WIDTH, HEIGHT))
-clock = pygame.time.Clock()
+class GameClass:
+    def __init__(self):
+        self.WIDTH, self.HEIGHT = 500, 700
+        self.screen = pygame.display.set_mode((self.WIDTH, self.HEIGHT))
+        self.clock = pygame.time.Clock()
 
-def menu():
-    print(f"running: {running} /|\ game_active: {game_active}")
+    def menu(self):
+        print(f"running: {running} /|\ game_active: {game_active}")
 
-def game():
-    print(f"running: {running} /|\ game_active: {game_active}")
+    def game(self):
+        print(f"running: {running} /|\ game_active: {game_active}")
 
+game_class = GameClass()
 while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -28,12 +31,12 @@ while running:
                 game_active = True
 
     if not game_active:
-        menu()
+        game_class.menu()
 
     if game_active:
-        game()
+        game_class.game()
 
     pygame.display.update()
-    clock.tick()
+    game_class.clock.tick()
 
 pygame.quit()
