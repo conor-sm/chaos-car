@@ -7,10 +7,26 @@ pygame.init()
 running = True
 game_active = False
 
+eventA_bool = False
+eventB_bool = False
+
+picked_bool = False
+
 PLAYER_IMAGE = pygame.transform.scale(pygame.image.load("data/yellow.png"), (64, 64))
 EVENT_A_IMAGE = pygame.transform.scale(pygame.image.load("data/red.png"), (480, 640))
 EVENT_B_IMAGE = pygame.transform.scale(pygame.image.load("data/blue.png"), (480, 640))
-EVENT_C_IMAGE = pygame.transform.scale(pygame.image.load("data/green.png"), (480, 640))
+
+def pick_random_event():
+    global eventA_bool, eventB_bool, picked_bool
+    events = [0, 1]
+    choice = random.choice(events)
+    picked_bool = True
+    if choice == 0:
+        eventA_bool = True
+        event_A.time_set()
+    elif choice == 1:
+        eventB_bool = True
+        event_B.time_set()
 
 class GameClass:
     def __init__(self):
@@ -22,11 +38,41 @@ class GameClass:
         print(f"running: {running} /|\ game_active: {game_active}")
 
     def game(self):
+        global picked_bool, eventA_bool, eventB_bool
+
         print(f"running: {running} /|\ game_active: {game_active}")
         self.screen.fill((0, 0, 0))
-        event_A.update()
-        event_A.draw() 
+
+        if not picked_bool:
+            pick_random_event()
+
+        if eventA_bool:
+            event_A.update()
+            event_A.draw()
+
+        if eventB_bool:
+            event_B.update()
+            event_B.draw()
+
         player_class.draw()
+
+    def spawnA(self):
+        global picked_bool, eventA_bool, eventB_bool
+        picked_bool = True
+        eventA_bool = True
+        event_A.time_set()
+        event_A.update()
+        event_A.draw()
+        print("EVENT A SPAWNED")
+
+    def spawnB(self):
+        global picked_bool, eventA_bool, eventB_bool
+        picked_bool = True
+        eventB_bool = True
+        event_B.time_set()
+        event_B.update()
+        event_B.draw()
+        print("EVENT B SPAWNED")
 
 class PlayerClass():
     def __init__(self):
@@ -41,11 +87,14 @@ class PlayerClass():
 class EventA:
     def __init__(self):
         self.image = EVENT_A_IMAGE
-        self.event_length = 10000
-        self.eventA_event = pygame.USEREVENT +1
-        pygame.time.set_timer(self.eventA_event, self.event_length)
         self.image_x = 0
         self.image_y = 0
+        self.eventA_event = pygame.USEREVENT +1
+
+    def time_set(self):
+        self.image_y = 0
+        self.event_length = 10000
+        pygame.time.set_timer(self.eventA_event, self.event_length)
 
     def update(self):
         self.image_y += 5
@@ -55,27 +104,15 @@ class EventA:
 
 class EventB:
     def __init__(self):
-        self.image == EVENT_B_IMAGE
-        self.event_length = 3000
-        self.eventB_event = pygame.USER_EVENT +1
-        pygame.time.set_timer(self.eventA_event, self.event_length)
+        self.image = EVENT_B_IMAGE
         self.image_x = 0
         self.image_y = 0
+        self.eventB_event = pygame.USEREVENT +2
 
-    def update(self):
-        self.image_y += 5
-
-    def draw(self):
-        game_class.screen.blit(self.image, (self.image_x, self.image_y))
-
-class EventC:
-    def __init__(self):
-        self.image == EVENT_C_IMAGE
-        self.event_length = 3000
-        self.eventC_event = pygame.USER_EVENT +1
-        pygame.time.set_timer(self.eventC_event, self.event_length)
-        self.image_x = 0
+    def time_set(self):
         self.image_y = 0
+        self.event_length = 3000
+        pygame.time.set_timer(self.eventB_event, self.event_length)
 
     def update(self):
         self.image_y += 5
@@ -87,7 +124,6 @@ game_class = GameClass()
 player_class = PlayerClass()
 event_A = EventA()
 event_B = EventB()
-event_C = EventC()
 
 while running:
     for event in pygame.event.get():
@@ -99,8 +135,16 @@ while running:
             if event.key == pygame.K_RETURN and not game_active:
                 game_active = True
 
-        #if event.type == event_A.event_A_event():
-            
+        if event.type == event_A.eventA_event:
+            pygame.time.set_timer(event_A.eventA_event, 0)
+            picked_bool = False
+            eventA_bool = False
+
+        if event.type == event_B.eventB_event:
+            pygame.time.set_timer(event_B.eventB_event, 0)
+            picked_bool = False
+            eventB_bool = False
+
     if not game_active:
         game_class.menu()
 
@@ -108,6 +152,6 @@ while running:
         game_class.game()
 
     pygame.display.update()
-    game_class.clock.tick()
+    game_class.clock.tick(60)
 
 pygame.quit()
