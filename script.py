@@ -20,6 +20,12 @@ event_key_complete = False
 
 pick_insult_complete = False
 
+player_key_complete = False
+
+event_start_time = 0
+
+event_successful = False
+
 PLAYER_IMAGE = pygame.transform.scale(pygame.image.load("data/car.png"), (128, 192))
 EVENT_A_IMAGE = pygame.transform.scale(pygame.image.load("data/red.png"), (64, 64))
 EVENT_B_IMAGE = pygame.transform.scale(pygame.image.load("data/blue.png"), (64, 64))
@@ -52,7 +58,7 @@ class GameClass:
         self.background = BACKGROUND
         self.background_x = 0
         self.background_y = 0
-        self.font = pygame.font.Font("data/font.ttf", 32) #FONT
+        self.font = pygame.font.Font("data/font.ttf", 32)
         self.small_font = pygame.font.Font("data/font.ttf", 20)
         self.rect_seperator = pygame.Rect(0, 500, 480, 140)
 
@@ -69,10 +75,21 @@ class GameClass:
         self.screen.fill((0, 0, 0))
         if not pick_insult_complete:
             pick_insult()
-        self.line_1 = self.font.render(f"{insult_choice}", True, (200, 200, 200))
+        self.line_1 = self.small_font.render(f"{insult_choice}", True, (200, 200, 200))
         self.line_2 = self.small_font.render("ENTER to try again", True, (200, 200, 200))
-        self.screen.blit(self.line_1, ((self.WIDTH - self.line_1.get_width()) // 2, (self.HEIGHT - self.line_1.get_width()) // 2 - 50))
-        self.screen.blit(self.line_2, ((self.WIDTH - self.line_2.get_width()) // 2, (self.HEIGHT - self.line_2.get_width()) // 2))
+        self.screen.blit(self.line_1, ((self.WIDTH - self.line_1.get_width()) // 2, (self.HEIGHT - self.line_1.get_width()) // 2 - 40))
+        self.screen.blit(self.line_2, ((self.WIDTH - self.line_2.get_width()) // 2, (self.HEIGHT - self.line_2.get_width()) // 2 - 65))
+    
+    def clear_event(self):
+        global eventA_bool, eventB_bool, picked_bool, event_successful, cooldown_start_time
+        eventA_bool = False
+        eventB_bool = False
+        picked_bool = False
+        event_successful = False
+        event_key_complete = False
+        cooldown_start_time = pygame.time.get_ticks()
+        pygame.time.set_timer(event_A.eventA_event, 0)
+        pygame.time.set_timer(event_B.eventB_event, 0)
 
     def update(self):
         self.background_y += 5
@@ -111,28 +128,43 @@ class PlayerClass():
         self.pressed_required_duration = 1000
     
     def update(self):
-        global event_key_complete, game_over
+        global event_key_complete, game_over, game_active, player_key_complete, event_successful
         keys = pygame.key.get_pressed()
         current_time = pygame.time.get_ticks()
         if eventA_bool or eventB_bool:
+            if not event_successful:
+                if not self.player_key_triggered and current_time - event_start_time > 2000:
+                    game_over = True
+                    game_active = False
+                    return
+
             if keys[pygame.K_e]:
                 if not self.player_key_triggered:
                     self.player_key_triggered = True
                     self.pressed_duration = current_time
+                
                 elif current_time - self.pressed_duration >= self.pressed_required_duration:
                     self.image = GREEN_DEBUG_IMAGE
                     event_key_complete = True
+                    event_successful = True
+                    game_class.clear_event()
+                    pygame.time.set_timer(pygame.USEREVENT + 99, 500)
                     return
-                elif (not self.player_key_triggered and current_time - self.pressed_duration >= self.pressed_required_duration):
-                    game_over = True
-                    return
-                    
-            else:
-                self.player_key_triggered = False
-                self.pressed_duration = 0
-                game_over = True
+            else:   
+                if self.player_key_triggered:
+                    held_time = current_time - self.pressed_duration
+                    if held_time < self.pressed_duration and not event_successful:
+                        game_over = True
+                        game_active = False
+                    self.player_key_triggered = False
+                    self.pressed_duration = 0
+        else:
+            self.player_key_triggered = False
+            self.pressed_duration = 0
+            event_successful = False
 
-        self.image = PLAYER_IMAGE
+        if not event_successful:
+            self.image = PLAYER_IMAGE
         
     def draw(self):
         game_class.screen.blit(self.image, (self.player_x, self.player_y))
@@ -145,8 +177,10 @@ class EventA:
         self.eventA_event = pygame.USEREVENT +1
 
     def time_set(self):
-        self.event_length = 3000
+        global event_start_time
+        self.event_length = 3800
         pygame.time.set_timer(self.eventA_event, self.event_length)
+        event_start_time = pygame.time.get_ticks()
 
     def draw(self):
         global event_key_complete
@@ -159,7 +193,6 @@ class EventA:
             game_class.screen.blit(self.line_2, ((game_class.WIDTH - self.line_2.get_width()) // 2, 540))
         elif event_key_complete:
             game_class.screen.blit(self.line_3, ((game_class.WIDTH - self.line_3.get_width()) // 2, 510))
-        event_key_complete = False
 
 class EventB:
     def __init__(self):
@@ -169,9 +202,10 @@ class EventB:
         self.eventB_event = pygame.USEREVENT +2
 
     def time_set(self):
-        self.event_length = 3000
+        global event_start_time
+        self.event_length = 3800
         pygame.time.set_timer(self.eventB_event, self.event_length)
-
+        event_start_time = pygame.time.get_ticks()
     def draw(self):
         global event_key_complete
         self.line_1 = game_class.small_font.render("An enemy B has spawned!", True, (200, 200, 200))
@@ -183,7 +217,6 @@ class EventB:
             game_class.screen.blit(self.line_2, ((game_class.WIDTH - self.line_2.get_width()) // 2, 540))
         elif event_key_complete:
             game_class.screen.blit(self.line_3, ((game_class.WIDTH - self.line_3.get_width()) // 2, 510))
-        event_key_complete = False
 
 game_class = GameClass()
 player_class = PlayerClass()
@@ -211,12 +244,18 @@ while running:
             picked_bool = False
             eventA_bool = False
             cooldown_start_time = pygame.time.get_ticks()
+            event_successful = False
 
         if event.type == event_B.eventB_event:
             pygame.time.set_timer(event_B.eventB_event, 0)
             picked_bool = False
             eventB_bool = False
             cooldown_start_time = pygame.time.get_ticks()
+            event_successful = False
+
+        if event.type == pygame.USEREVENT + 99:
+            pygame.time.set_timer(pygame.USEREVENT + 99, 0)
+            game_class.clear_event()
 
     if not game_active:
         game_class.menu()
