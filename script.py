@@ -27,11 +27,11 @@ event_successful = False
 just_reset = False
 
 PLAYER_IMAGE = pygame.transform.scale(pygame.image.load("data/car.png"), (128, 192))
-EVENT_A_IMAGE = pygame.transform.scale(pygame.image.load("data/red.png"), (64, 64))
-EVENT_B_IMAGE = pygame.transform.scale(pygame.image.load("data/blue.png"), (64, 64))
 GREEN_DEBUG_IMAGE = pygame.transform.scale(pygame.image.load("data/green.png"), (64, 64))
 BACKGROUND = pygame.transform.scale(pygame.image.load("data/background.png"), (480, 640))
 QUESTION_BOX = pygame.transform.scale(pygame.image.load("data/question_box.png"), (220, 145))
+ENEMY_A_IMAGE = pygame.transform.scale(pygame.image.load("data/enemyA.png"), (80, 120))
+ENEMY_B_IMAGE = pygame.transform.scale(pygame.image.load("data/enemyB.png"), (80, 120))
 
 def pick_random_event():
     global eventA_bool, eventB_bool, picked_bool
@@ -109,6 +109,25 @@ class GameClass:
         self.screen.blit(self.background, (0, self.background_y))
         self.screen.blit(self.background, (0, self.background_y - self.HEIGHT))
 
+    def reset(self):
+        global game_active, game_over, cooldown_start_time, pick_insult_complete, just_reset
+        global eventA_bool, eventB_bool, picked_bool, event_successful
+        global player_class, event_A, event_B
+        game_active = True
+        game_over = False
+        cooldown_start_time = pygame.time.get_ticks()
+        pick_insult_complete = False
+        just_reset = True
+        eventA_bool = False
+        eventB_bool = False
+        picked_bool = False
+        event_successful = False
+        player_class.player_key_triggered = False
+        player_class.pressed_duration = 0
+        player_class.points = 0
+        pygame.time.set_timer(event_A.eventA_event, 0)
+        pygame.time.set_timer(event_B.eventB_event, 0)
+
     def game(self):
         global picked_bool, eventA_bool, eventB_bool, game_won
         print(f"running: {running} /|\ game_active: {game_active} /|\ game_over: {game_over}")
@@ -134,7 +153,7 @@ class PlayerClass():
         self.image = PLAYER_IMAGE
         self.image_rect = self.image.get_rect()
         self.player_x = (game_class.WIDTH - self.image.get_width()) // 2
-        self.player_y = (game_class.HEIGHT - self.image.get_height()) // 2
+        self.player_y = 100
         self.player_key_triggered = False
         self.pressed_duration = 0
         self.pressed_required_duration = 1000
@@ -180,9 +199,9 @@ class PlayerClass():
 
 class EventA:
     def __init__(self):
-        self.image = EVENT_A_IMAGE
-        self.image_x = (game_class.WIDTH - 64) // 2
-        self.image_y = 0
+        self.image = ENEMY_A_IMAGE
+        self.image_x = (game_class.WIDTH - 80) // 2
+        self.image_y = 330
         self.eventA_event = pygame.USEREVENT +1
         self.x = 0
         self.y = 0
@@ -204,9 +223,9 @@ class EventA:
 
 class EventB:
     def __init__(self):
-        self.image = EVENT_B_IMAGE
-        self.image_x = (game_class.WIDTH - 64) // 2
-        self.image_y = 0
+        self.image = ENEMY_A_IMAGE
+        self.image_x = (game_class.WIDTH - 80) // 2
+        self.image_y = 330
         self.eventB_event = pygame.USEREVENT +2
         self.text_background = QUESTION_BOX
 
@@ -241,11 +260,7 @@ while running:
                 cooldown_start_time = pygame.time.get_ticks()
 
             if event.key == pygame.K_RETURN and game_over:
-                game_active = True
-                game_over = False
-                cooldown_start_time = pygame.time.get_ticks()
-                pick_insult_complete = False
-                just_reset = True
+                game_class.reset()
 
         if event.type == event_A.eventA_event:
             pygame.time.set_timer(event_A.eventA_event, 0)
@@ -268,6 +283,7 @@ while running:
     if just_reset:
         pick_insult_complete = True
         just_reset = False
+
     if game_over and not game_active:
         game_class.game_over_function()
 
