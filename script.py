@@ -1,6 +1,7 @@
 import pygame
 import random
-import sys
+import os
+import asyncio
 
 pygame.init()
 
@@ -26,12 +27,11 @@ event_start_time = 0
 event_successful = False
 just_reset = False
 
-PLAYER_IMAGE = pygame.transform.scale(pygame.image.load("data/car.png"), (128, 192))
-GREEN_DEBUG_IMAGE = pygame.transform.scale(pygame.image.load("data/green.png"), (64, 64))
-BACKGROUND = pygame.transform.scale(pygame.image.load("data/background.png"), (480, 640))
-QUESTION_BOX = pygame.transform.scale(pygame.image.load("data/question_box.png"), (220, 145))
-ENEMY_A_IMAGE = pygame.transform.scale(pygame.image.load("data/enemyA.png"), (80, 120))
-ENEMY_B_IMAGE = pygame.transform.scale(pygame.image.load("data/enemyB.png"), (80, 120))
+PLAYER_IMAGE = pygame.transform.scale(pygame.image.load(os.path.join("data", "car.png")), (128, 192))
+BACKGROUND = pygame.transform.scale(pygame.image.load(os.path.join("data", "background.png")), (480, 640))
+QUESTION_BOX = pygame.transform.scale(pygame.image.load(os.path.join("data", "question_box.png")), (220, 145))
+ENEMY_A_IMAGE = pygame.transform.scale(pygame.image.load(os.path.join("data","enemyA.png")), (80, 120))
+ENEMY_B_IMAGE = pygame.transform.scale(pygame.image.load(os.path.join("data","enemyB.png")), (80, 120))
 
 def pick_random_event():
     global eventA_bool, eventB_bool, picked_bool
@@ -55,13 +55,14 @@ class GameClass:
     def __init__(self):
         self.WIDTH, self.HEIGHT = 480, 640
         self.screen = pygame.display.set_mode((self.WIDTH, self.HEIGHT))
+        pygame.display.set_caption("Chaos Car")
         self.clock = pygame.time.Clock()
         self.background = BACKGROUND
         self.background_x = 0
         self.background_y = 0
-        self.font = pygame.font.Font("data/font.ttf", 32)
-        self.small_font = pygame.font.Font("data/font.ttf", 20)
-        self.smaller_font = pygame.font.Font("data/font.ttf", 15)
+        self.font = pygame.font.Font(os.path.join("data", "font.ttf"), 32)
+        self.small_font = pygame.font.Font(os.path.join("data", "font.ttf"), 20)
+        self.smaller_font = pygame.font.Font(os.path.join("data", "font.ttf"), 15)
         self.points = 0
 
     def menu(self):
@@ -248,55 +249,63 @@ player_class = PlayerClass()
 event_A = EventA()
 event_B = EventB()
 
-while running:
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
-            sys.exit()
+async def main():
+    global running, game_active, game_over, game_won
+    global picked_bool, eventA_bool, eventB_bool
+    global cooldown_start_time, event_successful, just_reset
+    global pick_insult_complete
 
-        if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_RETURN and not game_active:
-                game_active = True
+    while running:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_RETURN and not game_active:
+                    game_active = True
+                    cooldown_start_time = pygame.time.get_ticks()
+
+                if event.key == pygame.K_RETURN and game_over:
+                    game_class.reset()
+
+            if event.type == event_A.eventA_event:
+                pygame.time.set_timer(event_A.eventA_event, 0)
+                picked_bool = False
+                eventA_bool = False
                 cooldown_start_time = pygame.time.get_ticks()
+                event_successful = False
 
-            if event.key == pygame.K_RETURN and game_over:
-                game_class.reset()
+            if event.type == event_B.eventB_event:
+                pygame.time.set_timer(event_B.eventB_event, 0)
+                picked_bool = False
+                eventB_bool = False
+                cooldown_start_time = pygame.time.get_ticks()
+                event_successful = False
 
-        if event.type == event_A.eventA_event:
-            pygame.time.set_timer(event_A.eventA_event, 0)
-            picked_bool = False
-            eventA_bool = False
-            cooldown_start_time = pygame.time.get_ticks()
-            event_successful = False
+            if event.type == pygame.USEREVENT + 99:
+                pygame.time.set_timer(pygame.USEREVENT + 99, 0)
+                game_class.clear_event()
 
-        if event.type == event_B.eventB_event:
-            pygame.time.set_timer(event_B.eventB_event, 0)
-            picked_bool = False
-            eventB_bool = False
-            cooldown_start_time = pygame.time.get_ticks()
-            event_successful = False
+        if just_reset:
+            pick_insult_complete = True
+            just_reset = False
 
-        if event.type == pygame.USEREVENT + 99:
-            pygame.time.set_timer(pygame.USEREVENT + 99, 0)
-            game_class.clear_event()
+        if game_over and not game_active:
+            game_class.game_over_function()
 
-    if just_reset:
-        pick_insult_complete = True
-        just_reset = False
+        elif game_won:
+            game_class.game_won_function()
 
-    if game_over and not game_active:
-        game_class.game_over_function()
+        elif not game_active:
+            game_class.menu()
 
-    elif game_won:
-        game_class.game_won_function()
+        elif game_active:
+            game_class.game()
 
-    elif not game_active:
-        game_class.menu()
+        pygame.display.update()
+        game_class.clock.tick(60)
 
-    elif game_active:
-        game_class.game()
+        await asyncio.sleep(0)
+    pygame.quit()
 
-    pygame.display.update()
-    game_class.clock.tick(60)
-
-pygame.quit()
+asyncio.run(main())
